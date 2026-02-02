@@ -1,5 +1,8 @@
 # Academic Database RAG System
 
+- [repo rag: git/ti2](https://git.c.net.br/gogs_supper_admin/rag-academia-server) | [github](https://github.com/TiagoTi/rag-academia-server)
+- [repo: git/ti2](https://git.ti2.net.br/gogs_supper_admin/mcp-academia-server) | [github](https://github.com/TiagoTi/mcp-academia-server)
+
 A Retrieval-Augmented Generation (RAG) system designed for academic document search and retrieval. This system uses vector embeddings to enable semantic search across academic content, providing relevant context for AI-powered question answering.
 
 ## Features
