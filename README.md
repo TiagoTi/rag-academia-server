@@ -1,231 +1,163 @@
-# Academic Database RAG System
+# Sistema RAG para Base de Dados Acadêmica
 
-- [repo rag: git/ti2](https://git.c.net.br/gogs_supper_admin/rag-academia-server) | [github](https://github.com/TiagoTi/rag-academia-server)
-- [repo mcp: git/ti2](https://git.ti2.net.br/gogs_supper_admin/mcp-academia-server) | [github](https://github.com/TiagoTi/mcp-academia-server)
-- [repo chat: git/ti2](https://git.ti2.net.br/gogs_supper_admin/chat-academia-server) | [github](https://github.com/TiagoTi/chat-academia-server)
+Este repositório contém o **RAG Server**, um componente essencial do ecossistema de assistência acadêmica. O sistema utiliza a técnica de RAG (*Retrieval-Augmented Generation*) para permitir a busca e recuperação semântica de documentos acadêmicos através de embeddings vetoriais, fornecendo contexto relevante para modelos de linguagem (LLMs).
 
-A Retrieval-Augmented Generation (RAG) system designed for academic document search and retrieval. This system uses vector embeddings to enable semantic search across academic content, providing relevant context for AI-powered question answering.
+## 🌐 Ecossistema
 
-## Features
+Este projeto faz parte de um ecossistema integrado composto por três repositórios principais:
 
-- **Vector Search**: Semantic search using cosine similarity on document embeddings
-- **Document Ingestion**: Automatic processing and chunking of Markdown documents
-- **REST API**: HTTP API for querying similar documents
-- **SQLite Vector Database**: Efficient storage of documents and their embeddings
-- **Ollama Integration**: Uses Ollama's embedding models for generating vector representations
-- **Docker Support**: Containerized deployment with persistent storage
-- **TypeScript**: Fully typed codebase with modern JavaScript runtime (Bun)
+1.  **RAG Server (Este repositório):** Gerencia a base de dados vetorial, processa documentos Markdown e fornece uma API para busca semântica.
+    -   [GitHub](https://github.com/TiagoTi/rag-academia-server)
+2.  **MCP Server (Model Context Protocol):** Fornece ferramentas específicas para consulta de exercícios físicos e grupos musculares via protocolo MCP.
+    -   [GitHub](https://github.com/TiagoTi/mcp-academia-server)
+3.  **Chatbot API Server:** Atua como o orquestrador central, integrando as respostas do RAG e do MCP com o Ollama para gerar respostas finais ao usuário.
+    -   [GitHub](https://github.com/TiagoTi/chat-academia-server)
 
-## Architecture
+### Arquitetura do Sistema
 
-The system consists of several key components:
+```mermaid
+graph TD
+    User((Usuário)) --> Chatbot[Chatbot API Server :3403]
+    Chatbot --> RAG[RAG Server :3402]
+    Chatbot --> MCP[MCP Server :3401]
+    RAG --> Ollama[Ollama :11434]
+    Chatbot --> Ollama
+    Ollama --> Embed[nomic-embed-text]
+    Ollama --> LLM[mistral]
+```
 
-1. **Document Processing** (`insert-embeddings.ts`): Reads Markdown files, chunks content, generates embeddings using Ollama, and stores in SQLite
-2. **Vector Database** (`database.ts`): SQLite-based storage for documents and their vector embeddings
-3. **Search Engine** (`busca.ts`): Performs semantic search using cosine similarity
-4. **API Server** (`api.ts`): RESTful API for querying the system
-5. **Utilities** (`utils.ts`): Helper functions for similarity calculations
+---
 
-## Prerequisites
+## 🚀 Funcionalidades
 
-- [Bun](https://bun.sh/) runtime (v1.3.6 or later)
-- [Ollama](https://ollama.ai/) with embedding model (`nomic-embed-text:latest`)
-- SQLite (automatically handled by Bun)
+-   **Busca Vetorial**: Realiza busca semântica utilizando similaridade de cosseno em embeddings de documentos.
+-   **Ingestão de Documentos**: Processamento automático, fragmentação (*chunking*) e limpeza de documentos em formato Markdown.
+-   **API REST**: Endpoint HTTP para consulta de documentos similares.
+-   **Banco de Dados SQLite**: Armazenamento eficiente e local para documentos e seus respectivos vetores.
+-   **Integração com Ollama**: Utilização de modelos como `nomic-embed-text` para geração de representações vetoriais.
+-   **Dockerizado**: Pronto para deploy em containers com persistência de dados.
+-   **TypeScript & Bun**: Desenvolvido com TypeScript e otimizado para o ambiente de execução Bun.
 
-## Installation
+---
 
-1. **Clone the repository**
+## 🛠️ Pré-requisitos
 
-   ```bash
-   git clone <repository-url>
-   cd base-de-dados-academia
-   ```
+Antes de iniciar, certifique-se de ter instalado:
 
-2. **Install dependencies**
+1.  **Bun**: Runtime JavaScript/TypeScript ([Instalação](https://bun.sh/))
+2.  **Ollama**: Para execução local de modelos de IA ([Instalação](https://ollama.ai/))
+    -   Execute: `ollama pull nomic-embed-text:latest`
+3.  **Docker** (Opcional, para execução em container)
 
-   ```bash
-   bun install
-   ```
+---
 
-3. **Start Ollama and pull the embedding model**
+## 📦 Instalação e Configuração
 
-   ```bash
-   ollama serve
-   ollama pull nomic-embed-text:latest
-   ```
+### 1. Clonar e Instalar
 
-## Usage
+```bash
+git clone https://github.com/TiagoTi/rag-academia-server.git
+cd rag-academia-server
+bun install
+```
 
-### Running the API Server
+### 2. Preparação de Documentos
 
-Start the REST API server:
+Para alimentar o sistema com conhecimento:
+
+1.  Coloque seus arquivos `.md` na pasta `arquivos/novos/`.
+2.  Gere os embeddings executando:
+    ```bash
+    bun run insert-embeddings.ts
+    ```
+
+**O que este script faz:**
+- Lê os arquivos em `arquivos/novos/`.
+- Fragmenta o conteúdo em partes menores.
+- Gera os vetores (embeddings) via Ollama.
+- Salva tudo no arquivo `embeddings.sqlite`.
+- Move os documentos originais para `arquivos/processados/`.
+
+---
+
+## 🔌 Executando o Servidor
+
+### Localmente
+
+Inicie o servidor de API:
 
 ```bash
 bun run api.ts
 ```
 
-The server will start on port 3000 (configurable via `PORT` environment variable).
+O servidor estará disponível em `http://localhost:3000` (ou na porta definida pela variável `PORT`).
 
-### Adding Documents
+### Via Docker
 
-1. Place new Markdown (`.md`) files in the `arquivos/novos/` directory
-2. Run the document ingestion script:
-
+#### Construção da Imagem:
 ```bash
-bun run insert-embeddings.ts
+docker build --pull -t rag-server-academia .
 ```
 
-This will:
-
-- Process all `.md` files in `arquivos/novos/`
-- Generate embeddings for document chunks
-- Store them in the vector database
-- Move processed files to `arquivos/processados/`
-- Move failed files to `arquivos/erro/`
-
-### Testing the Search
-
-Run the example search script:
-
+#### Execução do Container:
 ```bash
-bun run index.ts
+docker run \
+  --restart=always \
+  --name rag-server-academia \
+  --network host \
+  -d \
+  -v $(pwd)/embeddings.sqlite:/tmp/embeddings.sqlite \
+  -e OLLAMA_BASE_URL=http://localhost:11434 \
+  -e DB_PATH=/tmp/embeddings.sqlite \
+  rag-server-academia
 ```
 
-This demonstrates searching for similar documents to a sample query.
+---
 
-## API Reference
+## 📄 Referência da API
 
-### POST /api/embeddings
+### `POST /api/embeddings`
 
-Search for documents similar to a given prompt.
+Busca os trechos de documentos mais relevantes para um determinado texto.
 
-**Request Body:**
+**Exemplo de corpo da requisição:**
 
 ```json
 {
-  "prompt": "What is the suffix of a markdown file?",
+  "prompt": "Quais são as orientações para treino de hipertrofia?",
   "topK": 3,
   "limiarSimilaridade": 0.5
 }
 ```
 
-**Parameters:**
+**Exemplo com cURL:**
 
-- `prompt` (required): The search query text
-- `topK` (optional): Number of top results to return (default: 3)
-- `limiarSimilaridade` (optional): Minimum similarity threshold (default: 0.5)
-
-**Response:**
-
-```json
-{
-  "contexto": "Documentos relevantes:\n\n--- Documento 1: file.md (similaridade: 0.85) ---\nContent...",
-  "resultados": [
-    {
-      "documento": {
-        "nome": "file.md",
-        "caminho": "/path/to/file.md",
-        "conteudo": "Content...",
-        "tamanho": 1234,
-        "embedding": [0.1, 0.2, ...]
-      },
-      "similaridade": 0.85
-    }
-  ]
-}
-```
-
-**Example using curl:**
-
-```http
+```bash
 curl -X POST http://localhost:3000/api/embeddings \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "on docker?", "topK": 3, "limiarSimilaridade": 0.5}'
+  -d '{"prompt": "hipertrofia", "topK": 2}'
 ```
 
-## Configuration
+---
 
-The system can be configured using environment variables:
+## ⚙️ Variáveis de Ambiente
 
-- `PORT`: API server port (default: 3000)
-- `DB_PATH`: Path to SQLite database file (default: `./embeddings.sqlite`)
-- `OLLAMA_BASE_URL`: Ollama API endpoint (default: `http://localhost:11434`)
+| Variável | Descrição | Padrão |
+|----------|-----------|---------|
+| `PORT` | Porta do servidor API | `3000` |
+| `DB_PATH` | Caminho do banco SQLite | `./embeddings.sqlite` |
+| `OLLAMA_BASE_URL` | URL da API do Ollama | `http://localhost:11434` |
 
-## Docker Deployment
+---
 
-### Build the Image
+## 🔍 Solução de Problemas
 
-```bash
-docker build --pull -t rag-academia-server .
-```
+-   **ECONNREFUSED 127.0.0.1:11434**: O Ollama não está rodando ou não está acessível. Se estiver no Docker, utilize `host.docker.internal` ou o IP da rede host.
+-   **Model not found**: Certifique-se de que executou `ollama pull nomic-embed-text`.
+-   **Database locked**: Verifique se não há múltiplos processos tentando acessar o arquivo `embeddings.sqlite` simultaneamente.
 
-### Run the Container
+---
 
-```bash
-docker run \
-  --restart=always \
-  -v $(pwd)/embeddings.sqlite:/tmp/embeddings.sqlite \
-  --name rag-academia-server \
-  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
-  -e DB_PATH=/tmp/embeddings.sqlite \
-  -e PORT=3000 \
-  --network=host \
-  -d \
-  rag-academia-server
-```
+## 📝 Licença
 
-**Notes:**
-
-- Mount the database file as a volume to persist data
-- Use `host.docker.internal` to access Ollama running on the host
-- Adjust `OLLAMA_BASE_URL` if Ollama is running in a separate container
-
-## How It Works
-
-1. **Document Ingestion**:
-   - Markdown files are read from `arquivos/novos/`
-   - Content is split into chunks (~2000 characters)
-   - Each chunk is converted to a vector embedding using Ollama
-   - Embeddings are stored in SQLite with metadata
-
-2. **Query Processing**:
-   - User query is converted to an embedding
-   - Cosine similarity is calculated against all stored embeddings
-   - Top-K most similar documents are returned
-   - Results are formatted into a context string for LLM consumption
-
-3. **Similarity Calculation**:
-   - Uses cosine similarity: `cos(θ) = (A · B) / (||A|| × ||B||)`
-   - Values range from -1 to 1, where higher values indicate greater similarity
-
-## Project Structure
-
-```txt
-├── api.ts                 # REST API server
-├── busca.ts               # Search and similarity functions
-├── database.ts            # SQLite vector database operations
-├── index.ts               # Example usage script
-├── insert-embeddings.ts   # Document ingestion pipeline
-├── types.ts               # TypeScript type definitions
-├── utils.ts               # Utility functions
-├── arquivos/              # Document storage
-│   ├── novos/            # New documents to process
-│   ├── processados/      # Successfully processed documents
-│   └── erro/             # Failed processing documents
-├── prompts/              # Prompt templates
-├── Dockerfile            # Container configuration
-├── package.json          # Dependencies and scripts
-└── tsconfig.json         # TypeScript configuration
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+Este projeto é licenciado sob a licença MIT.
